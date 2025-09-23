@@ -46,21 +46,15 @@ const output = document.getElementById('output');
 
 let selectedFiles = [];
 
+// Show image previews
 fileInput.addEventListener('change', () => {
   selectedFiles = Array.from(fileInput.files);
   renderPreviews();
 });
 
-clearBtn.addEventListener('click', () => {
-  fileInput.value = '';
-  selectedFiles = [];
-  fileList.innerHTML = '';
-  output.innerHTML = '';
-});
-
 function renderPreviews() {
   fileList.innerHTML = '';
-  selectedFiles.forEach((file, idx) => {
+  selectedFiles.forEach(file => {
     if(file.type.startsWith('image/')){
       const img = document.createElement('img');
       img.src = URL.createObjectURL(file);
@@ -77,23 +71,27 @@ function renderPreviews() {
   });
 }
 
+// Clear button
+clearBtn.addEventListener('click', () => {
+  fileInput.value = '';
+  selectedFiles = [];
+  fileList.innerHTML = '';
+  output.innerHTML = '';
+});
+
+// Create Download/Open button for Telegram-friendly usage
 function createDownloadButton(blob, filename){
   const btn = document.createElement('button');
-  btn.textContent = `Download ${filename}`;
+  btn.textContent = `Open ${filename}`;
   btn.className = 'output-button';
   btn.onclick = () => {
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    window.open(url, '_blank'); // Open in new tab for Telegram
   };
   return btn;
 }
 
+// Run button
 runBtn.addEventListener('click', async () => {
   if(selectedFiles.length === 0) { alert('Please select images'); return; }
   output.innerHTML = '';
@@ -103,7 +101,7 @@ runBtn.addEventListener('click', async () => {
     let img;
     if(file.type === 'image/png') img = await pdfDoc.embedPng(bytes);
     else img = await pdfDoc.embedJpg(bytes);
-    const page = pdfDoc.addPage([1080,1920]);
+    const page = pdfDoc.addPage([1080,1920]); // Mobile size
     page.drawImage(img, {x:0,y:0,width:1080,height:1920});
   }
   const pdfBytes = await pdfDoc.save();
