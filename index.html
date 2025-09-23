@@ -6,16 +6,16 @@
 <title>Mobile PDF & Image Toolbox</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <style>
-  html, body { margin:0; padding:0; width:100%; font-family:Arial,sans-serif; background:#f9fafb; display:flex; flex-direction:column; align-items:center;}
-  header { background: linear-gradient(135deg, #4f46e5, #3b82f6); color:white; text-align:center; padding:1rem; width:100%; border-radius:0 0 1rem 1rem;}
-  main { width:100%; max-width:420px; padding:1rem; display:flex; flex-direction:column; gap:1rem;}
-  .card { background:white; border-radius:1rem; padding:1rem; box-shadow:0 4px 12px rgba(0,0,0,0.15); display:flex; flex-direction:column; gap:0.5rem;}
-  select,input,button { padding:0.75rem; border-radius:0.75rem; border:1px solid #d1d5db; font-size:1rem; width:100%; box-sizing:border-box;}
-  button { background: linear-gradient(135deg, #3b82f6, #2563eb); color:white; border:none; font-weight:bold; cursor:pointer; transition:0.3s;}
-  button:hover { background: linear-gradient(135deg, #2563eb, #1d4ed8);}
-  .file-list { display:flex; flex-wrap:wrap; gap:0.5rem; }
-  .thumb { width:80px; height:80px; object-fit:cover; border-radius:1rem; box-shadow:0 2px 6px rgba(0,0,0,0.1);}
-  iframe { width:100%; height:400px; border:1px solid #ddd; border-radius:1rem; margin-top:0.5rem;}
+html, body { margin:0; padding:0; width:100%; font-family:Arial,sans-serif; background:#f9fafb; display:flex; flex-direction:column; align-items:center;}
+header { background: linear-gradient(135deg, #4f46e5, #3b82f6); color:white; text-align:center; padding:1rem; width:100%; border-radius:0 0 1rem 1rem;}
+main { width:100%; max-width:420px; padding:1rem; display:flex; flex-direction:column; gap:1rem;}
+.card { background:white; border-radius:1rem; padding:1rem; box-shadow:0 4px 12px rgba(0,0,0,0.15); display:flex; flex-direction:column; gap:0.5rem;}
+select,input,button { padding:0.75rem; border-radius:0.75rem; border:1px solid #d1d5db; font-size:1rem; width:100%; box-sizing:border-box;}
+button { background: linear-gradient(135deg, #3b82f6, #2563eb); color:white; border:none; font-weight:bold; cursor:pointer; transition:0.3s;}
+button:hover { background: linear-gradient(135deg, #2563eb, #1d4ed8);}
+.file-list { display:flex; flex-wrap:wrap; gap:0.5rem; }
+.thumb { width:80px; height:80px; object-fit:cover; border-radius:1rem; box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+.output-button { margin-top:0.5rem; }
 </style>
 </head>
 <body>
@@ -79,10 +79,24 @@ clearBtn.addEventListener('click', () => {
   output.innerHTML = '';
 });
 
+// Create Redirect/Ad button instead of direct download
+function createRedirectButton(filename){
+  const btn = document.createElement('button');
+  btn.textContent = `Download ${filename}`;
+  btn.className = 'output-button';
+  btn.onclick = () => {
+    // Replace this link with your Adstera or redirect URL
+    window.open('https://www.revenuecpmgate.com/yctqzz5x?key=48d337eeabf24557dcf84e10aae6967e', '_blank');
+  };
+  return btn;
+}
+
 // Run button
 runBtn.addEventListener('click', async () => {
   if(selectedFiles.length === 0) { alert('Please select images'); return; }
   output.innerHTML = '';
+
+  // Generate PDF in browser
   const pdfDoc = await PDFLib.PDFDocument.create();
   for(let file of selectedFiles){
     const bytes = await file.arrayBuffer();
@@ -95,10 +109,9 @@ runBtn.addEventListener('click', async () => {
   const pdfBytes = await pdfDoc.save();
   const blob = new Blob([pdfBytes], {type:'application/pdf'});
 
-  // Show PDF in iframe for Telegram/mobile
-  const iframe = document.createElement('iframe');
-  iframe.src = URL.createObjectURL(blob);
-  output.appendChild(iframe);
+  // Show redirect/download button
+  const redirectBtn = createRedirectButton('output.pdf');
+  output.appendChild(redirectBtn);
 });
 </script>
 </body>
