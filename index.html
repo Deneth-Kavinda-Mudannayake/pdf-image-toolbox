@@ -159,4 +159,16 @@
         if(file.type === 'image/png') img = await pdfDoc.embedPng(imgBytes);
         else img = await pdfDoc.embedJpg(imgBytes);
         const page = pdfDoc.addPage([1080,1920]);
-        page.drawImage(img, {x:0,y:0
+        page.drawImage(img, {x:0,y:0,width:1080,height:1920});
+      }
+      const pdfBytes = await pdfDoc.save();
+      const blob = new Blob([pdfBytes], {type:'application/pdf'});
+      const downloadBtn = createDownloadButton(blob,'output.pdf');
+      output.appendChild(downloadBtn);
+    }
+
+    progress.value = 100;
+  });
+</script>
+</body>
+</html>
