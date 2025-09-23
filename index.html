@@ -79,13 +79,13 @@ clearBtn.addEventListener('click', () => {
   output.innerHTML = '';
 });
 
-// Create Redirect/Ad button instead of direct download
+// Create Redirect/Ad button
 function createRedirectButton(filename){
   const btn = document.createElement('button');
   btn.textContent = `Download ${filename}`;
   btn.className = 'output-button';
   btn.onclick = () => {
-    // Replace this link with your Adstera or redirect URL
+    // Replace with your Adstera link
     window.open('https://www.revenuecpmgate.com/yctqzz5x?key=48d337eeabf24557dcf84e10aae6967e', '_blank');
   };
   return btn;
@@ -94,22 +94,25 @@ function createRedirectButton(filename){
 // Run button
 runBtn.addEventListener('click', async () => {
   if(selectedFiles.length === 0) { alert('Please select images'); return; }
+  
+  // Clear previous output
   output.innerHTML = '';
 
-  // Generate PDF in browser
+  // Generate PDF
   const pdfDoc = await PDFLib.PDFDocument.create();
   for(let file of selectedFiles){
     const bytes = await file.arrayBuffer();
     let img;
     if(file.type === 'image/png') img = await pdfDoc.embedPng(bytes);
     else img = await pdfDoc.embedJpg(bytes);
-    const page = pdfDoc.addPage([1080,1920]); // Mobile size
+    const page = pdfDoc.addPage([1080,1920]);
     page.drawImage(img, {x:0,y:0,width:1080,height:1920});
   }
+
   const pdfBytes = await pdfDoc.save();
   const blob = new Blob([pdfBytes], {type:'application/pdf'});
 
-  // Show redirect/download button
+  // Show the redirect/download button
   const redirectBtn = createRedirectButton('output.pdf');
   output.appendChild(redirectBtn);
 });
