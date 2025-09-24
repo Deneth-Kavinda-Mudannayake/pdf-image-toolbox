@@ -213,4 +213,12 @@ runBtn.addEventListener('click',async()=>{
   else if(operation.value==='convert-images'){
     await convertImages(selectedFiles,imageFormat.value,pages);
   }
-  // Merge PDFs, PDF→Images, Split PDF can be
+  // Merge PDFs, PDF→Images, Split PDF can be implemented similarly
+  progress.value=100;
+});
+
+// Download button
+downloadBtn.addEventListener('click',()=>{ if(createdFileBlob) downloadBlob(createdFileBlob,operation.value==='images-to-pdf'?'output.pdf':'output.file'); });
+</script>
+</body>
+</html>
