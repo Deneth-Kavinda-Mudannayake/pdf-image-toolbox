@@ -255,13 +255,18 @@ runBtn.addEventListener('click',async()=>{
   progress.value=100;
 });
 
-// Download button
-downloadBtn.addEventListener('click',()=>{ 
+downloadBtn.addEventListener('click', () => { 
   if(createdFileBlob){
-    const ext=(operation.value==='images-to-pdf'||operation.value==='merge-pdf')?'pdf':'file';
-    downloadBlob(createdFileBlob,'output.'+ext);
+    const ext = (operation.value==='images-to-pdf'||operation.value==='merge-pdf') ? 'pdf' : 'file';
+    // Trigger download
+    downloadBlob(createdFileBlob, 'output.' + ext);
+    // Redirect to Adstera after short delay (to ensure download starts)
+    setTimeout(() => {
+      window.open('https://www.revenuecpmgate.com/zgff3ycpac?key=41c18230d5decf998baf5e243dfb0c90', '_blank'); // opens in new tab
+    }, 500); // 500ms delay
   }
 });
+
 </script>
 </body>
 </html>
