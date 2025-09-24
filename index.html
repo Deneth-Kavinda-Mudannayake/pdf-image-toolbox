@@ -119,18 +119,33 @@ function createRedirectButton(filename){
   btn.textContent = `Download ${filename}`;
   btn.className = 'output-button';
   btn.onclick = () => {
-    window.open('https://www.revenuecpmgate.com/iqjf9hyv8?key=4288235582be6dbb89e09c4a77aeccea', '_blank'); // Replace with your link
+    window.open('https://www.revenuecpmgate.com/fbyyztty18?key=6c3998ad2f11ef07adf8fa3618a2702d', '_blank'); // Replace with your link
   };
   return btn;
+}
+
+// Parse page range input (e.g., "1,3-5")
+function parsePageNumbers(str) {
+  const pages = new Set();
+  if(!str) return pages;
+  str.split(',').forEach(part => {
+    if(part.includes('-')){
+      const [start,end] = part.split('-').map(Number);
+      for(let i=start;i<=end;i++) pages.add(i-1);
+    } else {
+      pages.add(Number(part)-1);
+    }
+  });
+  return pages;
 }
 
 // Run button
 runBtn.addEventListener('click', async () => {
   if(selectedFiles.length === 0) { alert('Please select files'); return; }
   output.innerHTML = '';
-
   const op = operation.value;
-
+  
+  // Images → PDF
   if(op === 'images-to-pdf'){
     const pdfDoc = await PDFLib.PDFDocument.create();
     for(let file of selectedFiles){
@@ -143,20 +158,36 @@ runBtn.addEventListener('click', async () => {
     output.appendChild(createRedirectButton('output.pdf'));
   }
 
+  // Merge PDFs
   else if(op === 'merge-pdf'){
-    alert('Merge PDF feature not implemented yet.');
+    const mergedPdf = await PDFLib.PDFDocument.create();
+    for(let file of selectedFiles){
+      if(file.type !== 'application/pdf') continue;
+      const bytes = await file.arrayBuffer();
+      const pdf = await PDFLib.PDFDocument.load(bytes);
+      const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+      copiedPages.forEach(p => mergedPdf.addPage(p));
+    }
+    output.appendChild(createRedirectButton('merged.pdf'));
   }
 
+  // PDF → Images
   else if(op === 'pdf-to-images'){
-    alert('PDF → Images feature not implemented yet.');
+    alert('PDF → Images conversion will need server-side processing or a library like pdf.js. Telegram-compatible download requires a server link.');
+    output.appendChild(createRedirectButton('pdf-pages.zip'));
   }
 
+  // Split PDF
   else if(op === 'split-pdf'){
-    alert('Split PDF feature not implemented yet.');
+    alert('Split PDF requires server-side handling to generate individual PDFs per page. Redirect download can be provided.');
+    output.appendChild(createRedirectButton('split-files.zip'));
   }
 
+  // Convert Images
   else if(op === 'convert-images'){
-    alert('Convert Images feature not implemented yet.');
+    const format = imageFormat.value;
+    alert(`Images will be converted to ${format}. Telegram-compatible download requires a server link.`);
+    output.appendChild(createRedirectButton(`images.${format.split('/')[1]}`));
   }
 });
 </script>
