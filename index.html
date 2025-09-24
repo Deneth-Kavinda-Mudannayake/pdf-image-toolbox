@@ -157,12 +157,14 @@ function parsePageNumbers(str){
 
 // Cross-browser download
 function downloadBlob(blob,filename){
-  if(!blob){alert('No file to download!');return;}
+  if(!blob){alert('No file ready!'); return;}
   if(window.navigator && window.navigator.msSaveOrOpenBlob) window.navigator.msSaveOrOpenBlob(blob,filename);
   else{
     const url=URL.createObjectURL(blob);
     const a=document.createElement('a');
-    a.href=url;a.download=filename;a.target='_blank';
+    a.href=url;
+    a.download=filename;
+    a.target='_blank';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -225,17 +227,20 @@ runBtn.addEventListener('click',async()=>{
     downloadBtn.classList.remove('hidden');
   }
   else if(operation.value==='pdf-to-images'){
-    alert('PDF→Images will be implemented later (requires canvas/pdf.js)');
+    alert('PDF→Images will be implemented later');
   }
   else if(operation.value==='split-pdf'){
-    alert('Split PDF will be implemented later (requires pdf-lib page extraction)');
+    alert('Split PDF will be implemented later');
   }
   progress.value=100;
 });
 
 // Download button
 downloadBtn.addEventListener('click',()=>{ 
-  if(createdFileBlob) downloadBlob(createdFileBlob,operation.value==='images-to-pdf' || operation.value==='merge-pdf'?'output.pdf':'output.file'); 
+  if(createdFileBlob){
+    const ext=(operation.value==='images-to-pdf'||operation.value==='merge-pdf')?'pdf':'file';
+    downloadBlob(createdFileBlob,'output.'+ext);
+  }
 });
 </script>
 </body>
