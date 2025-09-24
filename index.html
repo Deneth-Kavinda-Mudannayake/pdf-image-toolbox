@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mobile PDF & Image Toolbox</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   <style>
     html, body {
       margin: 0;
@@ -129,14 +130,12 @@
     const imgFormatGroup = document.getElementById('image-format-group');
     const pageRangeGroup = document.getElementById('page-range-group');
     const progress = document.getElementById('progress');
-    const imageFormat = document.getElementById('image-format');
-    const pageRange = document.getElementById('page-range');
 
     let selectedFiles = [];
 
     operation.addEventListener('change', () => {
-      imgFormatGroup.classList.toggle('hidden', operation.value !== 'convert-images');
-      pageRangeGroup.classList.toggle('hidden', operation.value !== 'convert-images');
+      imgFormatGroup.classList.toggle('hidden', operation.value !== 'convert-images' && operation.value !== 'pdf-to-images');
+      pageRangeGroup.classList.toggle('hidden', !(operation.value === 'pdf-to-images' || operation.value === 'split-pdf'));
     });
 
     fileInput.addEventListener('change', (e) => {
@@ -147,19 +146,23 @@
     function renderFileList() {
       fileList.innerHTML = '';
       selectedFiles.forEach((file, idx) => {
-        const el = document.createElement(file.type.startsWith('image/') ? 'img' : 'div');
         if(file.type.startsWith('image/')){
-          el.src = URL.createObjectURL(file);
-          el.className = 'thumb';
+          const img = document.createElement('img');
+          img.src = URL.createObjectURL(file);
+          img.className = 'thumb';
+          img.draggable = true;
+          img.dataset.index = idx;
+          fileList.appendChild(img);
         } else {
-          el.textContent = file.name;
-          el.style.padding = '0.5rem';
-          el.style.border = '1px solid #ddd';
-          el.style.borderRadius = '1rem';
+          const div = document.createElement('div');
+          div.textContent = file.name;
+          div.style.padding = '0.5rem';
+          div.style.border = '1px solid #ddd';
+          div.style.borderRadius = '1rem';
+          div.draggable = true;
+          div.dataset.index = idx;
+          fileList.appendChild(div);
         }
-        el.draggable = true;
-        el.dataset.index = idx;
-        fileList.appendChild(el);
       });
       initDragAndDrop();
     }
@@ -182,69 +185,36 @@
       });
     }
 
-    function parsePageNumbers(str) {
-      const pages = new Set();
-      if(!str) return pages;
-      str.split(',').forEach(part => {
-        if(part.includes('-')){
-          const [start,end] = part.split('-').map(Number);
-          for(let i=start;i<=end;i++) pages.add(i-1);
-        } else {
-          pages.add(Number(part)-1);
-        }
-      });
-      return pages;
-    }
-
-    async function convertImages(files, format, pages){
-      progress.classList.remove('hidden');
-      for(let i=0;i<files.length;i++){
-        if(!files[i].type.startsWith('image/')) continue;
-        if(pages.size>0 && !pages.has(i)) continue;
-        const imgFile = files[i];
-        const imgURL = URL.createObjectURL(imgFile);
-        const img = new Image();
-        await new Promise(resolve => { img.onload=resolve; img.src=imgURL; });
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img,0,0);
-        await new Promise(res => canvas.toBlob(blob => {
-          const a = document.createElement('a');
-          a.href = URL.createObjectURL(blob);
-          a.download = imgFile.name.split('.').slice(0,-1).join('.') + '.' + format.split('/')[1];
-          a.click();
-          res();
-        }, format));
-      }
-      progress.classList.add('hidden');
-    }
-
     runBtn.addEventListener('click', async () => {
-      if(selectedFiles.length === 0){ alert('Please select files'); return; }
       output.innerHTML = '';
-      if(operation.value === 'convert-images'){
-        const pages = parsePageNumbers(pageRange.value);
-        await convertImages(selectedFiles, imageFormat.value, pages);
-      }
+      progress.classList.remove('hidden');
+      progress.value = 10;
+
       if(operation.value === 'images-to-pdf'){
         const pdfDoc = await PDFLib.PDFDocument.create();
         for (let file of selectedFiles) {
-          if(!file.type.startsWith('image/')) continue;
           const imgBytes = await file.arrayBuffer();
-          const img = file.type==='image/png'? await pdfDoc.embedPng(imgBytes) : await pdfDoc.embedJpg(imgBytes);
-          const page = pdfDoc.addPage([1080,1920]);
-          page.drawImage(img,{x:0,y:0,width:1080,height:1920});
+          let img;
+          if (file.type === 'image/png') img = await pdfDoc.embedPng(imgBytes);
+          else img = await pdfDoc.embedJpg(imgBytes);
+          // Use mobile device size (portrait 1080x1920)
+          const page = pdfDoc.addPage([1080, 1920]);
+          page.drawImage(img, {x:0,y:0,width:1080,height:1920});
         }
         const pdfBytes = await pdfDoc.save();
-        const blob = new Blob([pdfBytes],{type:'application/pdf'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'output.pdf';
-        a.click();
+        downloadFile(pdfBytes, 'output.pdf', 'application/pdf');
       }
+
+      progress.value = 100;
     });
+
+    function downloadFile(bytes, filename, type){
+      const blob = new Blob([bytes], {type});
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+    }
   </script>
 </body>
 </html>
