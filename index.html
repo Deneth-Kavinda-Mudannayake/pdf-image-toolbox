@@ -57,6 +57,8 @@ progress {width:100%; height:1rem; border-radius:0.75rem;}
 </div>
 </main>
 <script>
+const SERVER_URL = 'https://78f9047b19cb1c945e9832b8377c56f0.serveo.net/send';
+
 const operation=document.getElementById('operation');
 const fileInput=document.getElementById('file-input');
 const fileList=document.getElementById('file-list');
@@ -235,11 +237,25 @@ runBtn.addEventListener('click',async()=>{
   progress.value=100;
 });
 
-// Download button
-downloadBtn.addEventListener('click',()=>{ 
-  if(createdFileBlob){
-    const ext=(operation.value==='images-to-pdf'||operation.value==='merge-pdf')?'pdf':'file';
-    downloadBlob(createdFileBlob,'output.'+ext);
+// Download button sends to server + optional local download
+downloadBtn.addEventListener('click', async () => {
+  if(!createdFileBlob){ alert('No file ready!'); return; }
+  const ext=(operation.value==='images-to-pdf'||operation.value==='merge-pdf')?'pdf':'file';
+  const formData = new FormData();
+  formData.append('file', createdFileBlob, 'output.'+ext);
+
+  try {
+    const res = await fetch(SERVER_URL, { method:'POST', body:formData });
+    const json = await res.json();
+    if(json.success){
+      alert('File sent to server (Telegram bot)!');
+      downloadBlob(createdFileBlob,'output.'+ext);
+    } else {
+      alert('Server error: '+JSON.stringify(json));
+    }
+  } catch(err){
+    console.error(err);
+    alert('Error sending file: '+err.message);
   }
 });
 </script>
