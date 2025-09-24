@@ -86,6 +86,7 @@
       height: 1rem;
       border-radius: 0.75rem;
     }
+    .btn-group { display:flex; gap:0.5rem; margin-top:0.5rem; }
   </style>
 </head>
 <body>
@@ -117,7 +118,10 @@
       </div>
       <div class="file-list" id="file-list"></div>
       <progress id="progress" value="0" max="100" class="hidden"></progress>
-      <button id="run-btn">Run</button>
+      <div class="btn-group">
+        <button id="run-btn">Run</button>
+        <button id="clear-btn" style="background:#e5e7eb;color:#111;">Clear</button>
+      </div>
       <div id="output"></div>
     </div>
   </main>
@@ -126,22 +130,50 @@
     const fileInput = document.getElementById('file-input');
     const fileList = document.getElementById('file-list');
     const runBtn = document.getElementById('run-btn');
+    const clearBtn = document.getElementById('clear-btn');
     const output = document.getElementById('output');
     const imgFormatGroup = document.getElementById('image-format-group');
     const pageRangeGroup = document.getElementById('page-range-group');
     const progress = document.getElementById('progress');
+    const imageFormat = document.getElementById('image-format');
+    const pageRange = document.getElementById('page-range');
 
     let selectedFiles = [];
 
+    // Allowed MIME types
+    const fileTypes = {
+      'images-to-pdf': ['image/png','image/jpeg','image/jpg','image/webp'],
+      'merge-pdf': ['application/pdf'],
+      'pdf-to-images': ['application/pdf'],
+      'split-pdf': ['application/pdf'],
+      'convert-images': ['image/png','image/jpeg','image/jpg','image/webp']
+    };
+
     operation.addEventListener('change', () => {
-      imgFormatGroup.classList.toggle('hidden', operation.value !== 'convert-images' && operation.value !== 'pdf-to-images');
-      pageRangeGroup.classList.toggle('hidden', !(operation.value === 'pdf-to-images' || operation.value === 'split-pdf'));
+      imgFormatGroup.classList.toggle('hidden', operation.value !== 'convert-images');
+      pageRangeGroup.classList.toggle('hidden', !(operation.value === 'convert-images' || operation.value === 'pdf-to-images' || operation.value==='split-pdf'));
+      clearSelection();
     });
 
     fileInput.addEventListener('change', (e) => {
-      selectedFiles = Array.from(e.target.files);
+      const allowedTypes = fileTypes[operation.value];
+      const files = Array.from(e.target.files);
+      selectedFiles = files.filter(f => allowedTypes.includes(f.type));
+      if(selectedFiles.length < files.length){
+        alert('Some files were ignored due to invalid type.');
+      }
       renderFileList();
     });
+
+    clearBtn.addEventListener('click', clearSelection);
+
+    function clearSelection(){
+      fileInput.value = '';
+      selectedFiles = [];
+      fileList.innerHTML = '';
+      output.innerHTML = '';
+      progress.classList.add('hidden');
+    }
 
     function renderFileList() {
       fileList.innerHTML = '';
@@ -185,28 +217,44 @@
       });
     }
 
-    runBtn.addEventListener('click', async () => {
-      output.innerHTML = '';
-      progress.classList.remove('hidden');
-      progress.value = 10;
-
-      if(operation.value === 'images-to-pdf'){
-        const pdfDoc = await PDFLib.PDFDocument.create();
-        for (let file of selectedFiles) {
-          const imgBytes = await file.arrayBuffer();
-          let img;
-          if (file.type === 'image/png') img = await pdfDoc.embedPng(imgBytes);
-          else img = await pdfDoc.embedJpg(imgBytes);
-          // Use mobile device size (portrait 1080x1920)
-          const page = pdfDoc.addPage([1080, 1920]);
-          page.drawImage(img, {x:0,y:0,width:1080,height:1920});
+    function parsePageNumbers(str) {
+      const pages = new Set();
+      if(!str) return pages;
+      str.split(',').forEach(part => {
+        if(part.includes('-')){
+          const [start,end] = part.split('-').map(Number);
+          for(let i=start;i<=end;i++) pages.add(i-1);
+        } else {
+          pages.add(Number(part)-1);
         }
-        const pdfBytes = await pdfDoc.save();
-        downloadFile(pdfBytes, 'output.pdf', 'application/pdf');
-      }
+      });
+      return pages;
+    }
 
-      progress.value = 100;
-    });
+    async function convertImages(files, format, pages){
+      progress.classList.remove('hidden');
+      for(let i=0;i<files.length;i++){
+        if(!files[i].type.startsWith('image/')) continue;
+        if(pages.size>0 && !pages.has(i)) continue;
+        const imgFile = files[i];
+        const imgURL = URL.createObjectURL(imgFile);
+        const img = new Image();
+        await new Promise(resolve => { img.onload=resolve; img.src=imgURL; });
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img,0,0);
+        await new Promise(res => canvas.toBlob(blob => {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = imgFile.name.split('.').slice(0,-1).join('.') + '.' + format.split('/')[1];
+          a.click();
+          res();
+        }, format));
+      }
+      progress.classList.add('hidden');
+    }
 
     function downloadFile(bytes, filename, type){
       const blob = new Blob([bytes], {type});
@@ -215,6 +263,34 @@
       link.download = filename;
       link.click();
     }
+
+    runBtn.addEventListener('click', async () => {
+      if(selectedFiles.length === 0){ alert('Please select files'); return; }
+      output.innerHTML = '';
+      progress.classList.remove('hidden');
+      progress.value = 10;
+
+      const pages = parsePageNumbers(pageRange.value);
+
+      if(operation.value === 'images-to-pdf'){
+        const pdfDoc = await PDFLib.PDFDocument.create();
+        for (let file of selectedFiles) {
+          const imgBytes = await file.arrayBuffer();
+          let img;
+          if (file.type === 'image/png') img = await pdfDoc.embedPng(imgBytes);
+          else img = await pdfDoc.embedJpg(imgBytes);
+          const page = pdfDoc.addPage([1080, 1920]);
+          page.drawImage(img, {x:0,y:0,width:1080,height:1920});
+        }
+        const pdfBytes = await pdfDoc.save();
+        downloadFile(pdfBytes, 'output.pdf', 'application/pdf');
+      }
+      else if(operation.value === 'convert-images'){
+        await convertImages(selectedFiles, imageFormat.value, pages);
+      }
+      // Merge PDFs, PDF->Images, Split PDF can be added here later
+      progress.value = 100;
+    });
   </script>
 </body>
 </html>
