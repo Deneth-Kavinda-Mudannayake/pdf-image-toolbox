@@ -76,8 +76,8 @@ let selectedFiles = [];
 
 // Show/hide extra inputs based on operation
 operation.addEventListener('change', () => {
-  imgFormatGroup.classList.toggle('hidden', !(operation.value === 'convert-images' || operation.value === 'pdf-to-images'));
-  pageRangeGroup.classList.toggle('hidden', !(operation.value === 'split-pdf' || operation.value === 'pdf-to-images' || operation.value === 'convert-images'));
+  imgFormatGroup.classList.toggle('hidden', !(operation.value === 'convert-images'));
+  pageRangeGroup.classList.toggle('hidden', !(operation.value === 'convert-images'));
 });
 
 // File previews
@@ -193,14 +193,9 @@ runBtn.addEventListener('click', async () => {
     output.appendChild(createRedirectButton('merged.pdf'));
   }
 
-  else if(op === 'pdf-to-images'){
-    alert('PDF → Images requires server-side processing. Redirect download provided.');
-    output.appendChild(createRedirectButton('pdf-pages.zip'));
-  }
-
-  else if(op === 'split-pdf'){
-    alert('Split PDF requires server-side processing. Redirect download provided.');
-    output.appendChild(createRedirectButton('split-files.zip'));
+  else if(op === 'pdf-to-images' || op==='split-pdf'){
+    // just show redirect button, no alerts
+    output.appendChild(createRedirectButton('output.zip'));
   }
 
   else if(op === 'convert-images'){
